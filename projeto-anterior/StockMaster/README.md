@@ -2,7 +2,7 @@
 Link do video de apresentacao: https://youtu.be/wgA9E_2KUSE
 Sistema de controle de estoque e vendas desenvolvido para a disciplina de Engenharia de Software II. Permite o cadastro de produtos, registro de entradas e saídas de mercadorias, processamento de vendas e geração de relatórios gerenciais.
 
-O sistema não possui interface gráfica. Toda a interação é feita via API REST, testável por Postman ou pela interface Swagger.
+O sistema não possui interface gráfica própria. Toda a interação é feita via API REST, testável por Postman ou pela interface Swagger. Para os testes funcionais de ES III foram adicionadas duas páginas mínimas (`produtos.html` e `venda.html`, em `src/main/resources/static/`), que só chamam a API.
 
 ## Identificação da Equipe e Papéis
 
@@ -202,6 +202,6 @@ src/main/java/com/stockMaster/
 
 - Sem autenticação ou controle de acesso por perfil de usuário
 - Banco H2 em memória: os dados são perdidos a cada reinicialização da aplicação
-- Sem interface gráfica — testes feitos via Postman, curl ou Swagger UI
+- Sem interface gráfica completa — só as duas páginas mínimas usadas nos testes de ES III; o resto via Postman, curl ou Swagger UI
 
 

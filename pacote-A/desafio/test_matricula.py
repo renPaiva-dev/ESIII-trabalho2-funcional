@@ -155,7 +155,7 @@ def test_ct10_matricula_repetida(driver, base_url):
     oferta = DisciplinasPage(driver, base_url)
     oferta.selecionar("ES3").confirmar()
     assert oferta.mensagem_erro() == "Aluno já possui matrícula neste semestre."
-    assert oferta.vagas("ES3") == 40          # nada gravado
+    assert oferta.quadro_de_vagas(VAGAS_INICIAIS) == dict(VAGAS_INICIAIS, BD2=39)   # só a BD2 da API
 
 
 

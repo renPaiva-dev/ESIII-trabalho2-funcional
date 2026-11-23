@@ -29,12 +29,15 @@ trabalho2-funcional/
 
 ## Versões usadas
 
-| Item | Versão |
-|---|---|
-| Python | 3.13.14 |
-| Selenium | 4.53.0 (o Selenium Manager baixa o chromedriver sozinho) |
-| pytest / pytest-html | 9.2.0 / 4.2.0 |
-| Navegador | Google Chrome 157 |
+Exemplo A e StockMaster rodaram no Windows 11 (22/11/2026); Desafio A, Exemplo B e Desafio B rodaram no
+Ubuntu 24.04 (23/11/2026).
+
+| Item | Windows 11 | Ubuntu 24.04 |
+|---|---|---|
+| Python | 3.13.14 | 3.12.3 |
+| Selenium (o Selenium Manager baixa o chromedriver sozinho) | 4.53.0 | 4.54.0 |
+| pytest / pytest-html | 9.2.0 / 4.2.0 | 9.2.0 / 4.2.0 |
+| Navegador | Google Chrome 157 | Google Chrome 157 |
 | Flask (sistema do Pacote A) | 3.1.3 |
 | Java / Maven (StockMaster) | JDK 21.0.6 (o projeto exige 17 ou superior) · Maven 3.9.11 · Spring Boot 3.5.15 |
 
