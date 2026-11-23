@@ -4,9 +4,21 @@ Telas: /matricula/login, /matricula/disciplinas e o comprovante.
 Cada classe guarda os localizadores e as ações da sua tela; os assert ficam nos testes.
 Só usamos id e data-testid, e esperas explícitas (WebDriverWait), nunca sleep.
 """
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+
+def esperar_pagina_nova(driver, botao):
+    """Espera o botão clicado sumir, ou seja, a página antiga ser trocada pela nova.
+
+    staleness_of é a espera que o exemplo do professor usa. O Chrome 157 às vezes
+    devolve um erro genérico no meio da troca de página ("Node with given id does
+    not belong to the document"); com ignored_exceptions o WebDriverWait ignora
+    esse erro e pergunta de novo, em vez de derrubar o teste.
+    """
+    WebDriverWait(driver, 5, ignored_exceptions=[WebDriverException]).until(EC.staleness_of(botao))
 
 
 class LoginMatriculaPage:
@@ -28,7 +40,9 @@ class LoginMatriculaPage:
         campo.clear()
         campo.send_keys(matricula)
         self.driver.find_element(*self.SENHA).send_keys(senha)
-        self.driver.find_element(*self.BOTAO_ENTRAR).click()
+        botao = self.driver.find_element(*self.BOTAO_ENTRAR)
+        botao.click()
+        esperar_pagina_nova(self.driver, botao)   # o servidor responde com uma página nova
 
     def mensagem_erro(self):
         return self.wait.until(EC.visibility_of_element_located(self.MENSAGEM_ERRO)).text
@@ -62,7 +76,9 @@ class DisciplinasPage:
         return self
 
     def confirmar(self):
-        self.driver.find_element(*self.BOTAO_CONFIRMAR).click()
+        botao = self.wait.until(EC.element_to_be_clickable(self.BOTAO_CONFIRMAR))
+        botao.click()
+        esperar_pagina_nova(self.driver, botao)   # comprovante ou oferta com erro
 
     def mensagem_erro(self):
         return self.wait.until(EC.visibility_of_element_located(self.MENSAGEM_ERRO)).text
@@ -72,6 +88,10 @@ class DisciplinasPage:
         celula = self.wait.until(EC.visibility_of_element_located(
             (By.CSS_SELECTOR, f"[data-testid='disc-{codigo}'] .vagas")))
         return int(celula.text)
+
+    def quadro_de_vagas(self, codigos):
+        """Vagas de várias disciplinas de uma vez, ex.: {'ES3': 40, 'BD2': 40, ...}."""
+        return {codigo: self.vagas(codigo) for codigo in codigos}
 
 
 class ComprovantePage:
@@ -85,6 +105,11 @@ class ComprovantePage:
 
     def mensagem(self):
         return self.wait.until(EC.visibility_of_element_located(self.MENSAGEM_SUCESSO)).text
+
+    def foi_exibido(self):
+        """True se a tela atual é o comprovante. Sem espera: use depois de confirmar(),
+        que já aguardou a página nova carregar."""
+        return len(self.driver.find_elements(*self.MENSAGEM_SUCESSO)) == 1
 
     def numero(self):
         return self.driver.find_element(*self.COMPROVANTE).text

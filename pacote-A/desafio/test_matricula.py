@@ -55,6 +55,18 @@ def ocupar_vagas(base_url, codigo, quantidade):
         matricular_pela_api(base_url, f"2026{101 + n:04d}", [codigo])
 
 
+def rejeicao_nao_gravou_matricula(driver, oferta):
+    """Prova, pela tela, de que a matrícula recusada não ficou gravada.
+
+    R6 só permite uma matrícula por aluno. Então, logo depois da recusa, o mesmo
+    aluno tenta uma matrícula válida (IHC, QUI-19h, sem choque com nada). Se o
+    comprovante aparecer, não existia matrícula dele. Fica no fim do teste porque
+    muda o estado; o reset do próximo teste limpa tudo.
+    """
+    oferta.selecionar("IHC").confirmar()
+    return ComprovantePage(driver).foi_exibido()
+
+
 @pytest.fixture
 def oferta(driver, base_url):
     """Pré-condição comum: aluno 20260001 logado e vendo a oferta de disciplinas."""
@@ -82,10 +94,11 @@ def test_ct03_oferta_exige_login(driver, base_url):
     assert driver.find_elements(*DisciplinasPage.TABELA) == [] # a oferta não apareceu
 
 
-def test_ct04_nenhuma_disciplina(oferta):
+def test_ct04_nenhuma_disciplina(driver, oferta):
     oferta.confirmar()                                              # confirma sem marcar nada
     assert oferta.mensagem_erro() == "Selecione ao menos uma disciplina."
-    assert {c: oferta.vagas(c) for c in VAGAS_INICIAIS} == VAGAS_INICIAIS   # nada gravado
+    assert oferta.quadro_de_vagas(VAGAS_INICIAIS) == VAGAS_INICIAIS   # nenhuma vaga descontada
+    assert rejeicao_nao_gravou_matricula(driver, oferta)            # e nenhuma matrícula gravada
 
 
 @pytest.mark.parametrize("codigos", [
@@ -99,19 +112,19 @@ def test_ct05_quantidade_valida(driver, oferta, codigos):
     assert comprovante.disciplinas() == codigos
 
 
-def test_ct06_seis_disciplinas(oferta):
+def test_ct06_seis_disciplinas(driver, oferta):
     seis = ["ES3", "BD2", "PW2", "IHC", "EMP", "MOB"]   # sem choque entre elas: só a quantidade falha
     oferta.selecionar(*seis).confirmar()
     assert oferta.mensagem_erro() == "Máximo de 5 disciplinas por semestre."
-    assert {c: oferta.vagas(c) for c in seis} == {c: VAGAS_INICIAIS[c] for c in seis}
+    assert oferta.quadro_de_vagas(VAGAS_INICIAIS) == VAGAS_INICIAIS   # nenhuma vaga descontada
+    assert rejeicao_nao_gravou_matricula(driver, oferta)
 
 
-
-def test_ct07_choque_de_horario(oferta):
+def test_ct07_choque_de_horario(driver, oferta):
     oferta.selecionar("ES3", "RED").confirmar()        # as duas são SEG-19h
     assert oferta.mensagem_erro() == "Choque de horário entre disciplinas selecionadas."
-    assert oferta.vagas("ES3") == 40                   # nada gravado
-    assert oferta.vagas("RED") == 30
+    assert oferta.quadro_de_vagas(VAGAS_INICIAIS) == VAGAS_INICIAIS   # nada gravado (ES3 40, RED 30...)
+    assert rejeicao_nao_gravou_matricula(driver, oferta)
 
 
 def test_ct08_vagas_esgotadas(driver, base_url):
@@ -121,7 +134,8 @@ def test_ct08_vagas_esgotadas(driver, base_url):
     assert oferta.vagas("MOB") == 0
     oferta.selecionar("MOB", "ES3").confirmar()
     assert oferta.mensagem_erro() == "Vagas esgotadas: MOB."
-    assert oferta.vagas("ES3") == 40   # ES3 não foi descontada
+    assert oferta.quadro_de_vagas(VAGAS_INICIAIS) == dict(VAGAS_INICIAIS, MOB=0)   # ES3 não foi descontada (tudo ou nada)
+    assert rejeicao_nao_gravou_matricula(driver, oferta)
 
 
 def test_ct09_ultima_vaga(driver, base_url):
@@ -152,6 +166,5 @@ def test_ct11_matricula_com_sucesso(driver, base_url, oferta):
     assert re.fullmatch(r"COMP-\d{6}", comprovante.numero()) # COMP- + 6 dígitos
     assert comprovante.disciplinas() == ["ES3", "BD2"]
     nova_oferta = DisciplinasPage(driver, base_url).abrir() # volta para a oferta
-    assert nova_oferta.vagas("ES3") == 39 # 1 vaga a menos em cada escolhida
-    assert nova_oferta.vagas("BD2") == 39
-    assert nova_oferta.vagas("PW2") == 35 # as outras continuam iguais
+    # 1 vaga a menos em ES3 e BD2, e todas as outras disciplinas iguais
+    assert nova_oferta.quadro_de_vagas(VAGAS_INICIAIS) == dict(VAGAS_INICIAIS, ES3=39, BD2=39)
