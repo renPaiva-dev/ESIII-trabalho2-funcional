@@ -1,0 +1,13 @@
+Evidencias obtidas com curl em 2026-11-22 19:56 contra http://127.0.0.1:8080
+
+DEF-02: GET /vendas/999999 (venda inexistente)
+{"mensagem":"Erro interno no servidor.","timestamp":"2026-11-22T19:56:52.8920792","status":500}
+HTTP 500
+
+Para comparacao, GET /produtos/999999 (produto inexistente)
+{"mensagem":"Produto com ID 999999 não encontrado.","timestamp":"2026-11-22T19:56:52.9204779","status":404}
+HTTP 404
+
+DEF-03: GET /pagina-que-nao-existe.html
+{"mensagem":"Erro interno no servidor.","timestamp":"2026-11-22T19:56:52.9513357","status":500}
+HTTP 500

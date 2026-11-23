@@ -1,0 +1,113 @@
+<!doctype html>
+<!--
+  Camada web mínima do StockMaster (criada para os testes funcionais de ES III).
+  Esta página NÃO tem regra de negócio: ela só chama a API REST que já existia
+  (GET e POST /produtos) e mostra na tela a resposta ou o erro devolvido pelo Java.
+  Todos os elementos usados pelos testes têm id ou data-testid.
+-->
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Produtos - StockMaster</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 16px; color: #222; }
+    nav a { margin-right: 16px; }
+    label { display: block; margin-top: 10px; }
+    input { padding: 6px; width: 280px; }
+    button { margin-top: 12px; padding: 6px 14px; cursor: pointer; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border-bottom: 1px solid #ddd; padding: 6px; text-align: left; }
+    .erro { color: #9b1c1c; }
+    .sucesso { color: #14532d; }
+  </style>
+</head>
+<body>
+  <nav><a id="link-produtos" href="produtos.html">Produtos</a><a id="link-venda" href="venda.html">Nova venda</a></nav>
+
+  <h1>Produtos</h1>
+
+  <h2>Cadastrar produto</h2>
+  <form id="form-produto" novalidate>
+    <label>Nome <input id="nome"></label>
+    <label>Descrição <input id="descricao"></label>
+    <label>Preço (R$) <input id="preco"></label>
+    <label>Quantidade em estoque <input id="quantidade"></label>
+    <label>Estoque mínimo <input id="estoque-minimo"></label>
+    <button id="cadastrar" type="submit">Cadastrar</button>
+  </form>
+
+  <p id="mensagem-erro" class="erro" role="alert"></p>
+  <p id="mensagem-sucesso" class="sucesso" role="status"></p>
+
+  <h2>Produtos cadastrados</h2>
+  <table id="tabela-produtos">
+    <thead><tr><th>ID</th><th>Nome</th><th>Preço</th><th>Quantidade</th><th>Estoque mínimo</th></tr></thead>
+    <tbody id="lista-produtos"></tbody>
+  </table>
+
+  <script>
+    // Converte o texto digitado: vazio vira null (a API decide se é obrigatório).
+    function numero(id) {
+      const texto = document.querySelector(id).value.trim().replace(",", ".");
+      return texto === "" ? null : Number(texto);
+    }
+
+    // Mostra o erro que a API devolveu, sem reescrever a mensagem.
+    function textoDoErro(corpo) {
+      if (corpo.erros) {   // 400: um erro por campo
+        return Object.keys(corpo.erros).sort().map(c => c + ": " + corpo.erros[c]).join("; ");
+      }
+      return corpo.mensagem || "Erro inesperado.";
+    }
+
+    async function listar() {
+      const resposta = await fetch("/produtos");
+      const produtos = await resposta.json();
+      const corpo = document.querySelector("#lista-produtos");
+      corpo.replaceChildren();
+      for (const p of produtos) {
+        const linha = document.createElement("tr");
+        linha.dataset.testid = "produto-" + p.id;
+        for (const [classe, valor] of [["id", p.id], ["nome", p.nome], ["preco", Number(p.preco).toFixed(2)],
+                                       ["quantidade", p.quantidade], ["estoque-minimo", p.estoqueMinimo]]) {
+          const celula = document.createElement("td");
+          celula.className = classe;
+          celula.textContent = valor;
+          linha.append(celula);
+        }
+        corpo.append(linha);
+      }
+    }
+
+    document.querySelector("#form-produto").onsubmit = async (evento) => {
+      evento.preventDefault();
+      const erro = document.querySelector("#mensagem-erro");
+      const sucesso = document.querySelector("#mensagem-sucesso");
+      erro.textContent = "";
+      sucesso.textContent = "";
+      const produto = {
+        nome: document.querySelector("#nome").value,
+        descricao: document.querySelector("#descricao").value,
+        preco: numero("#preco"),
+        quantidade: numero("#quantidade"),
+        estoqueMinimo: numero("#estoque-minimo"),
+      };
+      const resposta = await fetch("/produtos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(produto),
+      });
+      const corpo = await resposta.json();
+      if (resposta.ok) {
+        sucesso.textContent = "Produto cadastrado: " + corpo.nome + " (ID " + corpo.id + ")";
+        document.querySelector("#form-produto").reset();
+        await listar();
+      } else {
+        erro.textContent = textoDoErro(corpo);
+      }
+    };
+
+    listar();
+  </script>
+</body>
+</html>

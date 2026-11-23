@@ -1,0 +1,145 @@
+<!doctype html>
+<!--
+  Camada web mínima do StockMaster (criada para os testes funcionais de ES III).
+  Esta página NÃO tem regra de negócio: ela monta a lista de itens, envia para
+  POST /vendas e mostra o que o Java devolveu (total com ou sem desconto, ou o erro).
+  Ela não soma itens repetidos nem confere estoque: quem decide é a API.
+  Todos os elementos usados pelos testes têm id ou data-testid.
+-->
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Nova venda - StockMaster</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 16px; color: #222; }
+    nav a { margin-right: 16px; }
+    label { display: inline-block; margin: 10px 12px 0 0; }
+    select, input { padding: 6px; }
+    button { margin-top: 12px; padding: 6px 14px; cursor: pointer; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border-bottom: 1px solid #ddd; padding: 6px; text-align: left; }
+    .erro { color: #9b1c1c; }
+    #comprovante { border: 1px solid #14532d; padding: 12px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <nav><a id="link-produtos" href="produtos.html">Produtos</a><a id="link-venda" href="venda.html">Nova venda</a></nav>
+
+  <h1>Nova venda</h1>
+
+  <label>Produto <select id="produto"></select></label>
+  <label>Quantidade <input id="quantidade-item" size="6"></label>
+  <button id="adicionar-item" type="button">Adicionar item</button>
+
+  <h2>Itens da venda</h2>
+  <table id="tabela-itens">
+    <thead><tr><th>Produto</th><th>Quantidade</th></tr></thead>
+    <tbody id="itens-venda"></tbody>
+  </table>
+  <button id="confirmar-venda" type="button">Confirmar venda</button>
+  <button id="limpar-itens" type="button">Limpar itens</button>
+
+  <p id="mensagem-erro" class="erro" role="alert"></p>
+
+  <div id="comprovante" hidden>
+    <h2>Venda registrada</h2>
+    <p>Número da venda: <span id="venda-id"></span></p>
+    <p>Valor total: R$ <span id="venda-total"></span></p>
+    <table>
+      <thead><tr><th>Produto</th><th>Quantidade</th><th>Preço unitário</th><th>Subtotal</th></tr></thead>
+      <tbody id="comprovante-itens"></tbody>
+    </table>
+  </div>
+
+  <script>
+    let itens = [];   // o que será enviado: [{produtoId, quantidade, nome}]
+
+    // Mesmo texto de erro da tela de produtos: repete o que a API mandou.
+    function textoDoErro(corpo) {
+      if (corpo.erros) {   // 400: um erro por campo
+        return Object.keys(corpo.erros).sort().map(c => c + ": " + corpo.erros[c]).join("; ");
+      }
+      return corpo.mensagem || "Erro inesperado.";
+    }
+
+    function linha(celulas, testid) {
+      const tr = document.createElement("tr");
+      if (testid) tr.dataset.testid = testid;
+      for (const [classe, valor] of celulas) {
+        const td = document.createElement("td");
+        td.className = classe;
+        td.textContent = valor;
+        tr.append(td);
+      }
+      return tr;
+    }
+
+    // Preenche o select com os produtos da API (o estoque aparece só como informação).
+    async function carregarProdutos() {
+      const produtos = await (await fetch("/produtos")).json();
+      const select = document.querySelector("#produto");
+      select.replaceChildren();
+      for (const p of produtos) {
+        const opcao = document.createElement("option");
+        opcao.value = p.id;
+        opcao.textContent = p.nome + " (estoque: " + p.quantidade + ")";
+        opcao.dataset.nome = p.nome;
+        select.append(opcao);
+      }
+    }
+
+    function mostrarItens() {
+      const corpo = document.querySelector("#itens-venda");
+      corpo.replaceChildren(...itens.map((item, i) =>
+        linha([["nome", item.nome], ["quantidade", item.quantidade]], "item-" + (i + 1))));
+    }
+
+    document.querySelector("#adicionar-item").onclick = () => {
+      const select = document.querySelector("#produto");
+      const opcao = select.selectedOptions[0];
+      const texto = document.querySelector("#quantidade-item").value.trim();
+      itens.push({
+        produtoId: opcao ? Number(opcao.value) : null,
+        quantidade: texto === "" ? null : Number(texto),
+        nome: opcao ? opcao.dataset.nome : "",
+      });
+      document.querySelector("#quantidade-item").value = "";
+      mostrarItens();
+    };
+
+    document.querySelector("#limpar-itens").onclick = () => {
+      itens = [];
+      mostrarItens();
+    };
+
+    document.querySelector("#confirmar-venda").onclick = async () => {
+      const erro = document.querySelector("#mensagem-erro");
+      const comprovante = document.querySelector("#comprovante");
+      erro.textContent = "";
+      comprovante.hidden = true;
+      const resposta = await fetch("/vendas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itens: itens.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade })) }),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) {
+        erro.textContent = textoDoErro(corpo);
+        return;
+      }
+      document.querySelector("#venda-id").textContent = corpo.id;
+      document.querySelector("#venda-total").textContent = Number(corpo.valorTotal).toFixed(2);
+      document.querySelector("#comprovante-itens").replaceChildren(...corpo.itens.map(i => linha([
+        ["nome", i.nomeProduto], ["quantidade", i.quantidade],
+        ["preco-unitario", Number(i.precoUnitario).toFixed(2)], ["subtotal", Number(i.subtotal).toFixed(2)],
+      ], "comprovante-produto-" + i.produtoId)));
+      comprovante.hidden = false;
+      itens = [];
+      mostrarItens();
+      await carregarProdutos();   // estoque mudou
+    };
+
+    carregarProdutos();
+  </script>
+</body>
+</html>
