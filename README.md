@@ -21,6 +21,8 @@ trabalho2-funcional/
     exemplo/                     exemplo resolvido B (login no portal)
     desafio/                     desafio B (inscrições em minicursos): testes, Page Objects e matriz de casos
   projeto-anterior/              StockMaster: código do sistema, testes, Page Objects, matriz, defeitos e relatório
+  sistemas/                      sistemas dos pacotes A e B (cópias sem alteração do kit do professor)
+    pacote-A/app.py  pacote-B/app.py + web/
   resultados/                    relatórios HTML/XML das execuções e prints (evidências)
     pacote-A/exemplo/  pacote-A/desafio/  pacote-B/exemplo/  pacote-B/desafio/  projeto-anterior/
   relatorio.pdf
@@ -43,9 +45,10 @@ Ubuntu 24.04 (23/11/2026).
 
 ## Preparação (uma vez)
 
-Os sistemas dos pacotes A e B não estão neste repositório: eles estão no kit `ESIII_Testes_Funcionais.zip`,
-disponibilizado pelo professor na disciplina. Extraia o kit numa pasta sem acentos no caminho (como pede o Guia do
-Aluno, p.2). Abaixo, `KIT` é essa pasta.
+Os sistemas dos pacotes A e B estão na pasta `sistemas/`. São cópias, sem nenhuma alteração, dos arquivos do kit
+`ESIII_Testes_Funcionais.zip` do professor (`app.py` do Pacote A; `app.py` e a pasta `web/` do Pacote B), para que o
+repositório rode sem o kit. No Pacote B, a pasta `web/` precisa ficar ao lado do `app.py`. Rode os comandos na raiz
+do repositório, e use uma pasta sem acentos no caminho (como pede o Guia do Aluno, p.2).
 
 ```bash
 python -m venv .venv
@@ -62,10 +65,10 @@ Para as **3 execuções** de cada desafio, rode o comando 3 vezes trocando `rN` 
 
 ---
 
-## Pacote A (sistema em `KIT/02_Pacote_A_SaborExpress_Matricula/app/app.py`, porta 5000)
+## Pacote A (sistema em `sistemas/pacote-A/app.py`, porta 5000)
 
 ```bash
-python KIT/02_Pacote_A_SaborExpress_Matricula/app/app.py
+python sistemas/pacote-A/app.py
 ```
 
 ### Exemplo resolvido A – Fluxo de pedido
@@ -91,10 +94,10 @@ Matriz de casos: `pacote-A/desafio/matriz_casos.csv`.
 
 ---
 
-## Pacote B (sistema em `KIT/03_Pacote_B_Biblioteca_Minicursos/app.py`, porta 8000)
+## Pacote B (sistema em `sistemas/pacote-B/app.py`, porta 8000)
 
 ```bash
-python KIT/03_Pacote_B_Biblioteca_Minicursos/app.py
+python sistemas/pacote-B/app.py
 ```
 
 ### Exemplo resolvido B – Login
